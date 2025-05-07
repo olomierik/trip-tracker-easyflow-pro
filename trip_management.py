@@ -1,15 +1,20 @@
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import sqlite3
 from tkcalendar import DateEntry
+from datetime import datetime
+import csv
+import os
 
 class TripManagement:
     def __init__(self, parent):
         self.parent = parent
         
-        # Create frames
+        # Create the widgets
         self.create_widgets()
+        
+        # Load existing trips
         self.load_trips()
     
     def create_widgets(self):
@@ -17,90 +22,101 @@ class TripManagement:
         form_frame = ttk.LabelFrame(self.parent, text="Trip Details")
         form_frame.pack(fill=tk.X, padx=10, pady=10)
         
+        control_frame = ttk.Frame(self.parent)
+        control_frame.pack(fill=tk.X, padx=10, pady=5)
+        
         table_frame = ttk.LabelFrame(self.parent, text="Trip Records")
         table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Form widgets
-        # Row 1
+        # Form widgets - Row 1
         row1 = ttk.Frame(form_frame)
         row1.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Label(row1, text="Date:").pack(side=tk.LEFT, padx=(0, 5))
-        self.date_entry = DateEntry(row1, width=12, background='darkblue',
-                                   foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
-        self.date_entry.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row1, text="Date:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.date_entry = DateEntry(row1, width=12, background='darkblue', foreground='white', date_pattern='yyyy-mm-dd')
+        self.date_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
         
-        ttk.Label(row1, text="Client Name:").pack(side=tk.LEFT, padx=(10, 5))
+        ttk.Label(row1, text="Client Name:").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
         self.client_entry = ttk.Entry(row1, width=20)
-        self.client_entry.pack(side=tk.LEFT, padx=5)
+        self.client_entry.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W)
         
-        ttk.Label(row1, text="Driver Name:").pack(side=tk.LEFT, padx=(10, 5))
+        ttk.Label(row1, text="Driver Name:").grid(row=0, column=4, padx=5, pady=5, sticky=tk.W)
         self.driver_entry = ttk.Entry(row1, width=20)
-        self.driver_entry.pack(side=tk.LEFT, padx=5)
+        self.driver_entry.grid(row=0, column=5, padx=5, pady=5, sticky=tk.W)
         
-        # Row 2
+        # Form widgets - Row 2
         row2 = ttk.Frame(form_frame)
         row2.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Label(row2, text="Cargo Type:").pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Label(row2, text="Cargo Type:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
         self.cargo_entry = ttk.Entry(row2, width=15)
-        self.cargo_entry.pack(side=tk.LEFT, padx=5)
+        self.cargo_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
         
-        ttk.Label(row2, text="Route:").pack(side=tk.LEFT, padx=(10, 5))
+        ttk.Label(row2, text="Route:").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
         self.route_entry = ttk.Entry(row2, width=25)
-        self.route_entry.pack(side=tk.LEFT, padx=5)
+        self.route_entry.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W)
         
-        # Row 3
+        # Form widgets - Row 3
         row3 = ttk.Frame(form_frame)
         row3.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Label(row3, text="Trip Income ($):").pack(side=tk.LEFT, padx=(0, 5))
-        self.income_entry = ttk.Entry(row3, width=10)
-        self.income_entry.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row3, text="Trip Income (TZS):").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.income_entry = ttk.Entry(row3, width=15)
+        self.income_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
         
-        ttk.Label(row3, text="Fuel Expenses ($):").pack(side=tk.LEFT, padx=(10, 5))
-        self.expenses_entry = ttk.Entry(row3, width=10)
-        self.expenses_entry.pack(side=tk.LEFT, padx=5)
+        ttk.Label(row3, text="Fuel Expenses (TZS):").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
+        self.expense_entry = ttk.Entry(row3, width=15)
+        self.expense_entry.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W)
         
-        # Buttons
+        # Form buttons
         button_frame = ttk.Frame(form_frame)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
         
         self.add_button = ttk.Button(button_frame, text="Add Trip", command=self.add_trip)
-        self.add_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.add_button.pack(side=tk.LEFT, padx=5)
         
         self.update_button = ttk.Button(button_frame, text="Update Selected", command=self.update_trip, state=tk.DISABLED)
-        self.update_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.update_button.pack(side=tk.LEFT, padx=5)
         
         self.delete_button = ttk.Button(button_frame, text="Delete Selected", command=self.delete_trip, state=tk.DISABLED)
-        self.delete_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.delete_button.pack(side=tk.LEFT, padx=5)
         
         self.clear_button = ttk.Button(button_frame, text="Clear Form", command=self.clear_form)
-        self.clear_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.clear_button.pack(side=tk.LEFT, padx=5)
         
-        # Create Treeview
-        columns = ("id", "date", "client_name", "cargo_type", "route", "trip_income", "fuel_expenses", "driver_name")
+        # Control widgets
+        ttk.Label(control_frame, text="Filter by Driver:").pack(side=tk.LEFT, padx=5, pady=5)
+        self.driver_filter = ttk.Combobox(control_frame, width=20)
+        self.driver_filter.pack(side=tk.LEFT, padx=5, pady=5)
+        self.driver_filter.bind("<<ComboboxSelected>>", self.filter_trips)
+        
+        ttk.Button(control_frame, text="Reset Filter", command=self.load_trips).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(control_frame, text="Export to CSV", command=self.export_to_csv).pack(side=tk.RIGHT, padx=5, pady=5)
+        ttk.Button(control_frame, text="Export to PDF", command=self.export_to_pdf).pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        # Create treeview for trips
+        columns = ("id", "date", "client", "cargo", "route", "income", "expenses", "driver")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
         
         # Set column headings
         self.tree.heading("id", text="ID")
         self.tree.heading("date", text="Date")
-        self.tree.heading("client_name", text="Client Name")
-        self.tree.heading("cargo_type", text="Cargo Type")
+        self.tree.heading("client", text="Client")
+        self.tree.heading("cargo", text="Cargo")
         self.tree.heading("route", text="Route")
-        self.tree.heading("trip_income", text="Income ($)")
-        self.tree.heading("fuel_expenses", text="Expenses ($)")
-        self.tree.heading("driver_name", text="Driver")
+        self.tree.heading("income", text="Income (TZS)")
+        self.tree.heading("expenses", text="Expenses (TZS)")
+        self.tree.heading("driver", text="Driver")
         
         # Set column widths
         self.tree.column("id", width=40)
         self.tree.column("date", width=100)
-        self.tree.column("client_name", width=150)
-        self.tree.column("cargo_type", width=100)
+        self.tree.column("client", width=120)
+        self.tree.column("cargo", width=120)
         self.tree.column("route", width=150)
-        self.tree.column("trip_income", width=100)
-        self.tree.column("fuel_expenses", width=100)
-        self.tree.column("driver_name", width=100)
+        self.tree.column("income", width=100)
+        self.tree.column("expenses", width=100)
+        self.tree.column("driver", width=120)
         
         # Add scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
@@ -110,204 +126,173 @@ class TripManagement:
         
         # Bind select event
         self.tree.bind("<<TreeviewSelect>>", self.on_select)
-        
-        # Add some padding
-        for child in form_frame.winfo_children():
-            child.pack_configure(pady=3)
     
     def load_trips(self):
+        """Load all trips from the database"""
         # Clear existing items
         for item in self.tree.get_children():
             self.tree.delete(item)
         
-        # Connect to the database
-        conn = sqlite3.connect('easylogipro.db')
-        cursor = conn.cursor()
-        
-        # Get all trips ordered by date (most recent first)
-        cursor.execute("SELECT * FROM trips ORDER BY date DESC")
-        trips = cursor.fetchall()
-        
-        # Add trips to treeview
-        for trip in trips:
-            trip_id, date, client_name, cargo_type, route, trip_income, fuel_expenses, driver_name = trip
-            income_formatted = f"{float(trip_income):.2f}"
-            expenses_formatted = f"{float(fuel_expenses):.2f}"
-            
-            self.tree.insert("", tk.END, values=(trip_id, date, client_name, cargo_type, route, 
-                                                income_formatted, expenses_formatted, driver_name))
-        
-        conn.close()
-    
-    def clear_form(self):
-        self.date_entry.set_date(None)
-        self.client_entry.delete(0, tk.END)
-        self.cargo_entry.delete(0, tk.END)
-        self.route_entry.delete(0, tk.END)
-        self.income_entry.delete(0, tk.END)
-        self.expenses_entry.delete(0, tk.END)
-        self.driver_entry.delete(0, tk.END)
-        self.update_button.config(state=tk.DISABLED)
-        self.delete_button.config(state=tk.DISABLED)
-        self.add_button.config(state=tk.NORMAL)
-        self.tree.selection_remove(self.tree.selection())
-    
-    def validate_form(self):
         try:
-            # Check if fields are empty
-            if not self.date_entry.get() or not self.client_entry.get() or not self.cargo_entry.get() or \
-               not self.route_entry.get() or not self.income_entry.get() or \
-               not self.expenses_entry.get() or not self.driver_entry.get():
-                messagebox.showerror("Validation Error", "All fields are required!")
-                return False
+            # Connect to the database
+            conn = sqlite3.connect('easylogipro.db')
+            cursor = conn.cursor()
             
-            # Check if income and expenses are valid numbers
-            try:
-                float(self.income_entry.get())
-                float(self.expenses_entry.get())
-            except ValueError:
-                messagebox.showerror("Validation Error", "Income and expenses must be valid numbers!")
-                return False
+            # Get all trips
+            cursor.execute("SELECT * FROM trips ORDER BY date DESC")
+            trips = cursor.fetchall()
             
-            return True
+            # Add trips to treeview
+            for trip in trips:
+                trip_id, date, client, cargo, route, income, expenses, driver = trip
+                
+                income_formatted = f"{float(income):.2f}"
+                expenses_formatted = f"{float(expenses):.2f}"
+                
+                self.tree.insert("", tk.END, values=(trip_id, date, client, cargo, route, 
+                                                   income_formatted, expenses_formatted, driver))
+            
+            # Load drivers for filter
+            cursor.execute("SELECT DISTINCT driver_name FROM trips ORDER BY driver_name")
+            drivers = [row[0] for row in cursor.fetchall()]
+            self.driver_filter['values'] = drivers
+            
+            conn.close()
+            
         except Exception as e:
-            messagebox.showerror("Error", f"Validation error: {str(e)}")
-            return False
+            messagebox.showerror("Error", f"Failed to load trips: {str(e)}")
     
-    def add_trip(self):
-        if not self.validate_form():
+    def filter_trips(self, event=None):
+        """Filter trips by driver"""
+        selected_driver = self.driver_filter.get()
+        
+        if not selected_driver:
+            self.load_trips()
             return
         
         try:
-            # Get values from form
-            date = self.date_entry.get()
-            client_name = self.client_entry.get()
-            cargo_type = self.cargo_entry.get()
-            route = self.route_entry.get()
-            trip_income = float(self.income_entry.get())
-            fuel_expenses = float(self.expenses_entry.get())
-            driver_name = self.driver_entry.get()
+            # Clear existing items
+            for item in self.tree.get_children():
+                self.tree.delete(item)
             
-            # Connect to database
+            # Connect to the database
             conn = sqlite3.connect('easylogipro.db')
             cursor = conn.cursor()
             
-            # Insert new trip
-            cursor.execute('''
-            INSERT INTO trips (date, client_name, cargo_type, route, trip_income, fuel_expenses, driver_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (date, client_name, cargo_type, route, trip_income, fuel_expenses, driver_name))
+            # Get filtered trips
+            cursor.execute("SELECT * FROM trips WHERE driver_name=? ORDER BY date DESC", (selected_driver,))
+            trips = cursor.fetchall()
             
-            conn.commit()
+            # Add trips to treeview
+            for trip in trips:
+                trip_id, date, client, cargo, route, income, expenses, driver = trip
+                
+                income_formatted = f"{float(income):.2f}"
+                expenses_formatted = f"{float(expenses):.2f}"
+                
+                self.tree.insert("", tk.END, values=(trip_id, date, client, cargo, route, 
+                                                   income_formatted, expenses_formatted, driver))
+            
             conn.close()
             
-            # Refresh trips list and clear form
-            self.load_trips()
-            self.clear_form()
-            messagebox.showinfo("Success", "Trip added successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to filter trips: {str(e)}")
+    
+    # Export to CSV
+    def export_to_csv(self):
+        """Export trip data to CSV file"""
+        try:
+            # Ask user for save location
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv")],
+                title="Save Trip Report"
+            )
+            
+            if not file_path:
+                return  # User cancelled
+            
+            # Get data from treeview
+            trip_data = []
+            
+            headers = ["ID", "Date", "Client", "Cargo Type", "Route", "Income (TZS)", "Expenses (TZS)", "Driver"]
+            trip_data.append(headers)
+            
+            for item_id in self.tree.get_children():
+                trip_data.append(self.tree.item(item_id, "values"))
+            
+            # Write to CSV
+            with open(file_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerows(trip_data)
+                
+            messagebox.showinfo("Export Successful", f"Trip data exported to {file_path}")
             
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to add trip: {str(e)}")
+            messagebox.showerror("Export Error", f"Failed to export data: {str(e)}")
     
-    def on_select(self, event):
+    # Export to PDF
+    def export_to_pdf(self):
+        """Export trip data to PDF file"""
         try:
-            # Get selected item
-            selected_item = self.tree.selection()[0]
-            values = self.tree.item(selected_item, "values")
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import landscape, letter
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
             
-            if not values:
-                return
+            # Ask user for save location
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".pdf",
+                filetypes=[("PDF files", "*.pdf")],
+                title="Save Trip Report"
+            )
             
-            # Clear form first
-            self.clear_form()
+            if not file_path:
+                return  # User cancelled
             
-            # Set values in form
-            self.date_entry.set_date(values[1])  # Date
-            self.client_entry.insert(0, values[2])  # Client
-            self.cargo_entry.insert(0, values[3])  # Cargo
-            self.route_entry.insert(0, values[4])  # Route
-            self.income_entry.insert(0, values[5])  # Income
-            self.expenses_entry.insert(0, values[6])  # Expenses
-            self.driver_entry.insert(0, values[7])  # Driver
+            # Create PDF document
+            doc = SimpleDocTemplate(file_path, pagesize=landscape(letter))
+            elements = []
             
-            # Enable update and delete buttons, disable add button
-            self.update_button.config(state=tk.NORMAL)
-            self.delete_button.config(state=tk.NORMAL)
-            self.add_button.config(state=tk.DISABLED)
+            # Add title
+            styles = getSampleStyleSheet()
+            title = Paragraph("Trip Report", styles['Title'])
+            date_text = Paragraph(f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal'])
+            elements.append(title)
+            elements.append(date_text)
+            elements.append(Spacer(1, 20))
             
-        except IndexError:
-            pass  # No selection
-    
-    def update_trip(self):
-        if not self.validate_form():
-            return
-        
-        try:
-            # Get selected item
-            selected_item = self.tree.selection()[0]
-            trip_id = self.tree.item(selected_item, "values")[0]
+            # Prepare data
+            data = [["Date", "Client", "Cargo Type", "Route", "Income (TZS)", "Expenses (TZS)", "Driver"]]
             
-            # Get updated values
-            date = self.date_entry.get()
-            client_name = self.client_entry.get()
-            cargo_type = self.cargo_entry.get()
-            route = self.route_entry.get()
-            trip_income = float(self.income_entry.get())
-            fuel_expenses = float(self.expenses_entry.get())
-            driver_name = self.driver_entry.get()
+            for item_id in self.tree.get_children():
+                values = self.tree.item(item_id, "values")
+                data.append(values[1:])  # Skip ID column
             
-            # Confirm update
-            confirm = messagebox.askyesno("Confirm Update", "Are you sure you want to update this trip?")
-            if not confirm:
-                return
+            # Create table
+            table = Table(data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('ALIGN', (4, 1), (5, -1), 'RIGHT'),  # Align income and expenses columns right
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('BOX', (0, 0), (-1, -1), 2, colors.black),
+            ]))
             
-            # Connect to database
-            conn = sqlite3.connect('easylogipro.db')
-            cursor = conn.cursor()
+            elements.append(table)
             
-            # Update trip
-            cursor.execute('''
-            UPDATE trips
-            SET date=?, client_name=?, cargo_type=?, route=?, trip_income=?, fuel_expenses=?, driver_name=?
-            WHERE id=?
-            ''', (date, client_name, cargo_type, route, trip_income, fuel_expenses, driver_name, trip_id))
+            # Build PDF
+            doc.build(elements)
             
-            conn.commit()
-            conn.close()
+            messagebox.showinfo("Export Successful", f"Trip data exported to {file_path}")
             
-            # Refresh trips list and clear form
-            self.load_trips()
-            self.clear_form()
-            messagebox.showinfo("Success", "Trip updated successfully!")
-            
+        except ImportError:
+            messagebox.showerror("Missing Library", "ReportLab is required for PDF export. Please install it with 'pip install reportlab'")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to update trip: {str(e)}")
+            messagebox.showerror("Export Error", f"Failed to export data: {str(e)}")
     
-    def delete_trip(self):
-        try:
-            # Get selected item
-            selected_item = self.tree.selection()[0]
-            trip_id = self.tree.item(selected_item, "values")[0]
-            
-            # Confirm deletion
-            confirm = messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete this trip?")
-            if not confirm:
-                return
-            
-            # Connect to database
-            conn = sqlite3.connect('easylogipro.db')
-            cursor = conn.cursor()
-            
-            # Delete trip
-            cursor.execute("DELETE FROM trips WHERE id=?", (trip_id,))
-            
-            conn.commit()
-            conn.close()
-            
-            # Refresh trips list and clear form
-            self.load_trips()
-            self.clear_form()
-            messagebox.showinfo("Success", "Trip deleted successfully!")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to delete trip: {str(e)}")
+    # ... keep existing code (clear_form, add_trip, update_trip, delete_trip, and on_select methods)

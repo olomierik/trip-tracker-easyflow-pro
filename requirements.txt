@@ -2,4 +2,5 @@
 tkinter
 tkcalendar
 sqlite3
+reportlab
 pyinstaller

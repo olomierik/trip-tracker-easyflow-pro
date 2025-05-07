@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
@@ -61,6 +60,14 @@ class EasyLogiPro:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
         menubar.add_cascade(label="File", menu=file_menu)
+        
+        # Reports menu
+        reports_menu = tk.Menu(menubar, tearoff=0)
+        reports_menu.add_command(label="Check Low Stock Items", 
+                                command=lambda: self.inventory_management.check_low_stock())
+        reports_menu.add_command(label="Export Driver Payments", 
+                                command=lambda: self.driver_payment.export_to_csv())
+        menubar.add_cascade(label="Reports", menu=reports_menu)
         
         # Help menu
         help_menu = tk.Menu(menubar, tearoff=0)

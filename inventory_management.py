@@ -7,17 +7,32 @@ class InventoryManagement:
     def __init__(self, parent):
         self.parent = parent
         
+        # Set default low stock threshold
+        self.low_stock_threshold = 5
+        
         # Create widgets
         self.create_widgets()
         self.load_inventory()
     
     def create_widgets(self):
         # Create frames
+        control_frame = ttk.Frame(self.parent)
+        control_frame.pack(fill=tk.X, padx=10, pady=10)
+        
         form_frame = ttk.LabelFrame(self.parent, text="Item Details")
         form_frame.pack(fill=tk.X, padx=10, pady=10)
         
         table_frame = ttk.LabelFrame(self.parent, text="Inventory Items")
         table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Control panel widgets
+        ttk.Label(control_frame, text="Low Stock Threshold:").pack(side=tk.LEFT, padx=(0, 5))
+        self.threshold_entry = ttk.Entry(control_frame, width=6)
+        self.threshold_entry.pack(side=tk.LEFT, padx=5)
+        self.threshold_entry.insert(0, str(self.low_stock_threshold))
+        
+        ttk.Button(control_frame, text="Set Threshold", command=self.set_threshold).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Check Low Stock", command=self.check_low_stock).pack(side=tk.LEFT, padx=5)
         
         # Form widgets
         # Row 1
@@ -36,11 +51,11 @@ class InventoryManagement:
         row2 = ttk.Frame(form_frame)
         row2.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Label(row2, text="Purchase Price ($):").pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Label(row2, text="Purchase Price (TZS):").pack(side=tk.LEFT, padx=(0, 5))
         self.purchase_entry = ttk.Entry(row2, width=15)
         self.purchase_entry.pack(side=tk.LEFT, padx=5)
         
-        ttk.Label(row2, text="Sale Price ($):").pack(side=tk.LEFT, padx=(10, 5))
+        ttk.Label(row2, text="Sale Price (TZS):").pack(side=tk.LEFT, padx=(10, 5))
         self.sale_entry = ttk.Entry(row2, width=15)
         self.sale_entry.pack(side=tk.LEFT, padx=5)
         
@@ -61,16 +76,17 @@ class InventoryManagement:
         self.clear_button.pack(side=tk.LEFT, padx=5, pady=5)
         
         # Create Treeview
-        columns = ("id", "item_name", "quantity", "purchase_price", "sale_price", "value")
+        columns = ("id", "item_name", "quantity", "purchase_price", "sale_price", "value", "status")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
         
         # Set column headings
         self.tree.heading("id", text="ID")
         self.tree.heading("item_name", text="Item Name")
         self.tree.heading("quantity", text="Quantity")
-        self.tree.heading("purchase_price", text="Purchase Price ($)")
-        self.tree.heading("sale_price", text="Sale Price ($)")
-        self.tree.heading("value", text="Total Value ($)")
+        self.tree.heading("purchase_price", text="Purchase Price (TZS)")
+        self.tree.heading("sale_price", text="Sale Price (TZS)")
+        self.tree.heading("value", text="Total Value (TZS)")
+        self.tree.heading("status", text="Status")
         
         # Set column widths
         self.tree.column("id", width=40)
@@ -79,6 +95,7 @@ class InventoryManagement:
         self.tree.column("purchase_price", width=120)
         self.tree.column("sale_price", width=120)
         self.tree.column("value", width=120)
+        self.tree.column("status", width=80)
         
         # Add scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.tree.yview)
@@ -92,6 +109,39 @@ class InventoryManagement:
         # Add some padding
         for child in form_frame.winfo_children():
             child.pack_configure(pady=3)
+            
+        # Configure tags for status colors
+        self.tree.tag_configure('low_stock', background='#ffcccc')
+        self.tree.tag_configure('ok_stock', background='white')
+    
+    def set_threshold(self):
+        try:
+            new_threshold = int(self.threshold_entry.get())
+            if new_threshold < 0:
+                messagebox.showwarning("Invalid Value", "Threshold must be a positive number.")
+                return
+                
+            self.low_stock_threshold = new_threshold
+            messagebox.showinfo("Threshold Set", f"Low stock threshold set to {self.low_stock_threshold} items.")
+            self.load_inventory()  # Reload to update status colors
+        except ValueError:
+            messagebox.showwarning("Invalid Value", "Please enter a valid number.")
+    
+    def check_low_stock(self):
+        low_stock_items = []
+        
+        for item_id in self.tree.get_children():
+            values = self.tree.item(item_id, "values")
+            quantity = int(values[2])
+            if quantity <= self.low_stock_threshold:
+                low_stock_items.append(f"{values[1]} (Qty: {quantity})")
+        
+        if low_stock_items:
+            message = "The following items are low in stock:\n\n"
+            message += "\n".join(low_stock_items)
+            messagebox.showwarning("Low Stock Alert", message)
+        else:
+            messagebox.showinfo("Stock Status", "All items are above the low stock threshold.")
     
     def load_inventory(self):
         # Clear existing items
@@ -117,48 +167,20 @@ class InventoryManagement:
             sale_formatted = f"{float(sale_price):.2f}"
             value_formatted = f"{float(total_value):.2f}"
             
+            # Determine status based on quantity
+            status = "OK"
+            tag = 'ok_stock'
+            
+            if quantity <= self.low_stock_threshold:
+                status = "LOW"
+                tag = 'low_stock'
+                
             self.tree.insert("", tk.END, values=(item_id, name, quantity, purchase_formatted, 
-                                             sale_formatted, value_formatted))
+                                             sale_formatted, value_formatted, status), tags=(tag,))
         
         conn.close()
     
-    def clear_form(self):
-        self.name_entry.delete(0, tk.END)
-        self.quantity_entry.delete(0, tk.END)
-        self.purchase_entry.delete(0, tk.END)
-        self.sale_entry.delete(0, tk.END)
-        self.update_button.config(state=tk.DISABLED)
-        self.delete_button.config(state=tk.DISABLED)
-        self.add_button.config(state=tk.NORMAL)
-        self.tree.selection_remove(self.tree.selection())
-    
-    def validate_form(self):
-        try:
-            # Check if fields are empty
-            if not self.name_entry.get() or not self.quantity_entry.get() or \
-               not self.purchase_entry.get() or not self.sale_entry.get():
-                messagebox.showerror("Validation Error", "All fields are required!")
-                return False
-            
-            # Check if quantity is a valid integer
-            try:
-                int(self.quantity_entry.get())
-            except ValueError:
-                messagebox.showerror("Validation Error", "Quantity must be a valid integer!")
-                return False
-                
-            # Check if prices are valid numbers
-            try:
-                float(self.purchase_entry.get())
-                float(self.sale_entry.get())
-            except ValueError:
-                messagebox.showerror("Validation Error", "Prices must be valid numbers!")
-                return False
-                
-            return True
-        except Exception as e:
-            messagebox.showerror("Error", f"Validation error: {str(e)}")
-            return False
+    # ... keep existing code (clear_form, validate_form methods)
     
     def add_item(self):
         if not self.validate_form():
@@ -198,34 +220,14 @@ class InventoryManagement:
             self.clear_form()
             messagebox.showinfo("Success", "Inventory item added successfully!")
             
+            # Check if the item is below threshold and alert
+            if quantity <= self.low_stock_threshold:
+                messagebox.showwarning("Low Stock Alert", f"The item '{name}' has been added with a quantity of {quantity}, which is below or at the low stock threshold ({self.low_stock_threshold}).")
+            
         except Exception as e:
             messagebox.showerror("Error", f"Failed to add inventory item: {str(e)}")
     
-    def on_select(self, event):
-        try:
-            # Get selected item
-            selected_item = self.tree.selection()[0]
-            values = self.tree.item(selected_item, "values")
-            
-            if not values:
-                return
-            
-            # Clear form first
-            self.clear_form()
-            
-            # Set values in form
-            self.name_entry.insert(0, values[1])  # Name
-            self.quantity_entry.insert(0, values[2])  # Quantity
-            self.purchase_entry.insert(0, values[3])  # Purchase price
-            self.sale_entry.insert(0, values[4])  # Sale price
-            
-            # Enable update and delete buttons, disable add button
-            self.update_button.config(state=tk.NORMAL)
-            self.delete_button.config(state=tk.NORMAL)
-            self.add_button.config(state=tk.DISABLED)
-            
-        except IndexError:
-            pass  # No selection
+    # ... keep existing code (on_select method)
     
     def update_item(self):
         if not self.validate_form():
@@ -275,35 +277,11 @@ class InventoryManagement:
             self.clear_form()
             messagebox.showinfo("Success", "Inventory item updated successfully!")
             
+            # Check if the updated item is below threshold
+            if quantity <= self.low_stock_threshold:
+                messagebox.showwarning("Low Stock Alert", f"The item '{name}' has been updated with a quantity of {quantity}, which is below or at the low stock threshold ({self.low_stock_threshold}).")
+            
         except Exception as e:
             messagebox.showerror("Error", f"Failed to update inventory item: {str(e)}")
     
-    def delete_item(self):
-        try:
-            # Get selected item
-            selected_item = self.tree.selection()[0]
-            item_id = self.tree.item(selected_item, "values")[0]
-            name = self.tree.item(selected_item, "values")[1]
-            
-            # Confirm deletion
-            confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete '{name}'?")
-            if not confirm:
-                return
-            
-            # Connect to database
-            conn = sqlite3.connect('easylogipro.db')
-            cursor = conn.cursor()
-            
-            # Delete item
-            cursor.execute("DELETE FROM inventory WHERE id=?", (item_id,))
-            
-            conn.commit()
-            conn.close()
-            
-            # Refresh inventory and clear form
-            self.load_inventory()
-            self.clear_form()
-            messagebox.showinfo("Success", "Inventory item deleted successfully!")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to delete inventory item: {str(e)}")
+    # ... keep existing code (delete_item method)
