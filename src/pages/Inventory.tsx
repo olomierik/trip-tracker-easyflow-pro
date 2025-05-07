@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
@@ -53,7 +52,7 @@ const Inventory = () => {
           toast({
             title: "Low Stock Alert",
             description: `${lowStock.length} item(s) are running low on stock.`,
-            variant: "warning",
+            variant: "destructive",
           });
         }
       } catch (error) {
@@ -276,7 +275,7 @@ const Inventory = () => {
     <Layout title="Inventory Management">
       <div className="space-y-4">
         {lowStockItems.length > 0 && (
-          <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+          <Alert variant="destructive" className="bg-yellow-50 border-yellow-200">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Low Stock Alert</AlertTitle>
             <AlertDescription>
