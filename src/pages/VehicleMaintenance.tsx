@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
+import ExportButtons from '@/components/common/ExportButtons';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { 
@@ -8,7 +9,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import databaseService, { Maintenance } from '@/services/DatabaseService';
 import { format } from 'date-fns';
+import { generateExcelReport, generatePDFReport } from '@/utils/reportUtils';
 
 const VehicleMaintenance = () => {
   const { toast } = useToast();
@@ -48,6 +51,70 @@ const VehicleMaintenance = () => {
     
     fetchMaintenance();
   }, [toast]);
+  
+  // Handle export to Excel
+  const handleExportExcel = () => {
+    try {
+      const headers = ['Vehicle Plate', 'Service Date', 'Description', 'Cost (TSh)'];
+      const rows = records.map(record => [
+        record.vehiclePlateNumber,
+        record.serviceDate,
+        record.description,
+        record.cost.toFixed(2)
+      ]);
+
+      generateExcelReport({
+        headers,
+        rows,
+        title: 'Vehicle Maintenance Report',
+        fileName: `vehicle-maintenance-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Maintenance records exported to Excel successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to Excel:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export maintenance records.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle export to PDF
+  const handleExportPDF = () => {
+    try {
+      const headers = ['Vehicle Plate', 'Service Date', 'Description', 'Cost (TSh)'];
+      const rows = records.map(record => [
+        record.vehiclePlateNumber,
+        record.serviceDate,
+        record.description,
+        record.cost.toFixed(2)
+      ]);
+
+      generatePDFReport({
+        headers,
+        rows,
+        title: 'Vehicle Maintenance Report',
+        fileName: `vehicle-maintenance-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Maintenance records exported to PDF successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export maintenance records.',
+        variant: 'destructive',
+      });
+    }
+  };
   
   // Handle edit
   const handleEdit = (record: Maintenance) => {
@@ -179,9 +246,15 @@ const VehicleMaintenance = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Maintenance Records</h2>
-          <Button onClick={openNewMaintenanceModal}>
-            <Plus className="h-4 w-4 mr-2" /> Add Maintenance
-          </Button>
+          <div className="flex space-x-2">
+            <ExportButtons 
+              onExportExcel={handleExportExcel} 
+              onExportPDF={handleExportPDF} 
+            />
+            <Button onClick={openNewMaintenanceModal}>
+              <Plus className="h-4 w-4 mr-2" /> Add Maintenance
+            </Button>
+          </div>
         </div>
         
         <DataTable
@@ -200,6 +273,9 @@ const VehicleMaintenance = () => {
             <DialogTitle>
               {currentRecord ? 'Edit Maintenance Record' : 'Add Maintenance Record'}
             </DialogTitle>
+            <DialogDescription>
+              Enter the maintenance details below.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">

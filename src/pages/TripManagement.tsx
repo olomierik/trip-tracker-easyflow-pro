@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
+import ExportButtons from '@/components/common/ExportButtons';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { 
@@ -8,13 +9,15 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
+  DialogFooter, 
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import databaseService, { Trip } from '@/services/DatabaseService';
 import { format } from 'date-fns';
+import { generateExcelReport, generatePDFReport } from '@/utils/reportUtils';
 
 const TripManagement = () => {
   const { toast } = useToast();
@@ -50,6 +53,76 @@ const TripManagement = () => {
     
     fetchTrips();
   }, [toast]);
+  
+  // Handle export to Excel
+  const handleExportExcel = () => {
+    try {
+      const headers = ['Date', 'Client Name', 'Cargo Type', 'Route', 'Income (TSh)', 'Fuel Expenses (TSh)', 'Driver'];
+      const rows = trips.map(trip => [
+        trip.date,
+        trip.clientName,
+        trip.cargoType,
+        trip.route,
+        trip.tripIncome.toFixed(2),
+        trip.fuelExpenses.toFixed(2),
+        trip.driverName
+      ]);
+
+      generateExcelReport({
+        headers,
+        rows,
+        title: 'Trip Records Report',
+        fileName: `trip-records-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Trip records exported to Excel successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to Excel:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export trip records.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle export to PDF
+  const handleExportPDF = () => {
+    try {
+      const headers = ['Date', 'Client', 'Cargo', 'Route', 'Income (TSh)', 'Expenses (TSh)', 'Driver'];
+      const rows = trips.map(trip => [
+        trip.date,
+        trip.clientName,
+        trip.cargoType,
+        trip.route,
+        trip.tripIncome.toFixed(2),
+        trip.fuelExpenses.toFixed(2),
+        trip.driverName
+      ]);
+
+      generatePDFReport({
+        headers,
+        rows,
+        title: 'Trip Records Report',
+        fileName: `trip-records-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Trip records exported to PDF successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export trip records.',
+        variant: 'destructive',
+      });
+    }
+  };
   
   // Handle edit
   const handleEdit = (trip: Trip) => {
@@ -203,9 +276,15 @@ const TripManagement = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Trip Records</h2>
-          <Button onClick={openNewTripModal}>
-            <Plus className="h-4 w-4 mr-2" /> Add Trip
-          </Button>
+          <div className="flex space-x-2">
+            <ExportButtons 
+              onExportExcel={handleExportExcel} 
+              onExportPDF={handleExportPDF} 
+            />
+            <Button onClick={openNewTripModal}>
+              <Plus className="h-4 w-4 mr-2" /> Add Trip
+            </Button>
+          </div>
         </div>
         
         <DataTable
@@ -224,6 +303,9 @@ const TripManagement = () => {
             <DialogTitle>
               {currentTrip ? 'Edit Trip Record' : 'Add Trip Record'}
             </DialogTitle>
+            <DialogDescription>
+              Enter the trip details below.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">

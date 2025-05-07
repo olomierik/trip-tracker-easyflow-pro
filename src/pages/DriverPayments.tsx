@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
+import ExportButtons from '@/components/common/ExportButtons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import databaseService, { DriverPayment } from '@/services/DatabaseService';
+import { generateExcelReport, generatePDFReport } from '@/utils/reportUtils';
 
 const DriverPayments = () => {
   const { toast } = useToast();
@@ -41,7 +43,73 @@ const DriverPayments = () => {
     fetchDriverPayments();
   }, [toast]);
   
-  // Table columns - fixed to match Column<DriverPayment> type
+  // Handle export to Excel
+  const handleExportExcel = () => {
+    try {
+      const headers = ['Driver Name', 'Trips', 'Total Income (TSh)', 'Total Expenses (TSh)', 'Net Payment (TSh)'];
+      const rows = driverPayments.map(driver => [
+        driver.driverName,
+        driver.tripCount,
+        driver.totalIncome.toFixed(2),
+        driver.totalExpenses.toFixed(2),
+        driver.netPayment.toFixed(2)
+      ]);
+
+      generateExcelReport({
+        headers,
+        rows,
+        title: 'Driver Payments Report',
+        fileName: `driver-payments-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Driver payments exported to Excel successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to Excel:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export driver payments.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle export to PDF
+  const handleExportPDF = () => {
+    try {
+      const headers = ['Driver Name', 'Trips', 'Total Income (TSh)', 'Total Expenses (TSh)', 'Net Payment (TSh)'];
+      const rows = driverPayments.map(driver => [
+        driver.driverName,
+        driver.tripCount,
+        driver.totalIncome.toFixed(2),
+        driver.totalExpenses.toFixed(2),
+        driver.netPayment.toFixed(2)
+      ]);
+
+      generatePDFReport({
+        headers,
+        rows,
+        title: 'Driver Payments Report',
+        fileName: `driver-payments-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Driver payments exported to PDF successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export driver payments.',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  // Table columns
   const columns = [
     { 
       header: 'Driver Name', 
@@ -109,7 +177,14 @@ const DriverPayments = () => {
         </div>
         
         <div className="space-y-4">
-          <h2 className="text-lg font-medium">Driver Payment Summary</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-medium">Driver Payment Summary</h2>
+            <ExportButtons 
+              onExportExcel={handleExportExcel} 
+              onExportPDF={handleExportPDF} 
+            />
+          </div>
+          
           <Card>
             <CardContent className="p-4">
               <DataTable

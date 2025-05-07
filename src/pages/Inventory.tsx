@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
+import ExportButtons from '@/components/common/ExportButtons';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { 
@@ -8,12 +10,18 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import databaseService, { InventoryItem } from '@/services/DatabaseService';
+import { generateExcelReport, generatePDFReport } from '@/utils/reportUtils';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
+const LOW_STOCK_THRESHOLD = 5; // Set threshold for low stock alert
 
 const Inventory = () => {
   const { toast } = useToast();
@@ -21,6 +29,7 @@ const Inventory = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
+  const [lowStockItems, setLowStockItems] = useState<InventoryItem[]>([]);
   
   // Form state
   const [itemName, setItemName] = useState('');
@@ -34,6 +43,19 @@ const Inventory = () => {
       try {
         const data = await databaseService.getInventory();
         setItems(data);
+        
+        // Check for low stock items
+        const lowStock = data.filter(item => item.quantity <= LOW_STOCK_THRESHOLD);
+        setLowStockItems(lowStock);
+        
+        // Show toast notification for low stock items if any
+        if (lowStock.length > 0) {
+          toast({
+            title: "Low Stock Alert",
+            description: `${lowStock.length} item(s) are running low on stock.`,
+            variant: "warning",
+          });
+        }
       } catch (error) {
         console.error('Failed to fetch inventory:', error);
         toast({
@@ -46,6 +68,72 @@ const Inventory = () => {
     
     fetchInventory();
   }, [toast]);
+  
+  // Handle export to Excel
+  const handleExportExcel = () => {
+    try {
+      const headers = ['Item Name', 'Quantity', 'Purchase Price (TSh)', 'Sale Price (TSh)', 'Profit Margin (%)'];
+      const rows = items.map(item => [
+        item.itemName,
+        item.quantity,
+        item.purchasePrice.toFixed(2),
+        item.salePrice.toFixed(2),
+        calculateMargin(item.purchasePrice, item.salePrice)
+      ]);
+
+      generateExcelReport({
+        headers,
+        rows,
+        title: 'Inventory Report',
+        fileName: `inventory-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Inventory exported to Excel successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to Excel:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export inventory.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle export to PDF
+  const handleExportPDF = () => {
+    try {
+      const headers = ['Item Name', 'Quantity', 'Purchase Price (TSh)', 'Sale Price (TSh)', 'Profit Margin'];
+      const rows = items.map(item => [
+        item.itemName,
+        item.quantity,
+        item.purchasePrice.toFixed(2),
+        item.salePrice.toFixed(2),
+        calculateMargin(item.purchasePrice, item.salePrice)
+      ]);
+
+      generatePDFReport({
+        headers,
+        rows,
+        title: 'Inventory Report',
+        fileName: `inventory-${new Date().toISOString().split('T')[0]}`
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Inventory exported to PDF successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to export to PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export inventory.',
+        variant: 'destructive',
+      });
+    }
+  };
   
   // Handle edit
   const handleEdit = (item: InventoryItem) => {
@@ -156,7 +244,7 @@ const Inventory = () => {
     return `${margin.toFixed(1)}%`;
   };
   
-  // Table columns - fixed to match Column<InventoryItem> type
+  // Table columns
   const columns = [
     { 
       header: 'Item Name', 
@@ -187,11 +275,29 @@ const Inventory = () => {
   return (
     <Layout title="Inventory Management">
       <div className="space-y-4">
+        {lowStockItems.length > 0 && (
+          <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Low Stock Alert</AlertTitle>
+            <AlertDescription>
+              {lowStockItems.length} item(s) are running low on stock (below {LOW_STOCK_THRESHOLD} units):
+              {' '}
+              {lowStockItems.map(item => item.itemName).join(', ')}
+            </AlertDescription>
+          </Alert>
+        )}
+      
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Inventory Items</h2>
-          <Button onClick={openNewItemModal}>
-            <Plus className="h-4 w-4 mr-2" /> Add Item
-          </Button>
+          <div className="flex space-x-2">
+            <ExportButtons 
+              onExportExcel={handleExportExcel} 
+              onExportPDF={handleExportPDF} 
+            />
+            <Button onClick={openNewItemModal}>
+              <Plus className="h-4 w-4 mr-2" /> Add Item
+            </Button>
+          </div>
         </div>
         
         <DataTable
@@ -210,6 +316,9 @@ const Inventory = () => {
             <DialogTitle>
               {currentItem ? 'Edit Inventory Item' : 'Add Inventory Item'}
             </DialogTitle>
+            <DialogDescription>
+              Enter the inventory item details below.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
