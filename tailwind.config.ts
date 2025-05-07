@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				easylogipro: {
+					50: '#f0f7ff',
+					100: '#e0f0fe',
+					200: '#bae2fd',
+					300: '#7dcdfc',
+					400: '#36b3f9',
+					500: '#0c99ea',
+					600: '#017bc8',
+					700: '#0263a3',
+					800: '#065386',
+					900: '#0b456f',
+					950: '#082c4a'
 				}
 			},
 			borderRadius: {
