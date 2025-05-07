@@ -11,10 +11,12 @@ import {
 import { Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { ReactNode } from 'react';
 
+// Updated Column interface to properly handle the accessor types
 interface Column<T> {
   header: string;
-  accessor: keyof T | ((item: T) => React.ReactNode);
+  accessor: keyof T | ((item: T) => ReactNode);
   className?: string;
 }
 
@@ -51,11 +53,14 @@ function DataTable<T>({
     setItemToDelete(null);
   };
 
-  const renderCell = (item: T, column: Column<T>) => {
+  // Fixed renderCell to properly handle the accessor types and ensure correct return type
+  const renderCell = (item: T, column: Column<T>): ReactNode => {
     if (typeof column.accessor === 'function') {
       return column.accessor(item);
     } else {
-      return item[column.accessor as keyof T];
+      // Convert the value to string to ensure it's always renderable
+      const value = item[column.accessor];
+      return value !== null && value !== undefined ? String(value) : '';
     }
   };
 

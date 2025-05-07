@@ -41,30 +41,30 @@ const DriverPayments = () => {
     fetchDriverPayments();
   }, [toast]);
   
-  // Table columns
+  // Table columns - fixed to match Column<DriverPayment> type
   const columns = [
     { 
       header: 'Driver Name', 
-      accessor: 'driverName' 
+      accessor: 'driverName' as keyof DriverPayment
     },
     { 
       header: 'Trips', 
-      accessor: 'tripCount',
+      accessor: 'tripCount' as keyof DriverPayment,
       className: 'text-center'
     },
     { 
       header: 'Total Income', 
-      accessor: (driver: DriverPayment) => `$${driver.totalIncome.toFixed(2)}`,
+      accessor: (driver: DriverPayment) => `TSh ${driver.totalIncome.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Total Expenses', 
-      accessor: (driver: DriverPayment) => `$${driver.totalExpenses.toFixed(2)}`,
+      accessor: (driver: DriverPayment) => `TSh ${driver.totalExpenses.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Net Payment', 
-      accessor: (driver: DriverPayment) => `$${driver.netPayment.toFixed(2)}`,
+      accessor: (driver: DriverPayment) => `TSh ${driver.netPayment.toFixed(2)}`,
       className: 'text-right font-medium'
     }
   ];
@@ -100,7 +100,7 @@ const DriverPayments = () => {
               <CardTitle className="text-sm font-medium">Total Net Payments</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalPayments.toFixed(2)}</div>
+              <div className="text-2xl font-bold">TSh {totalPayments.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Combined driver payments
               </p>

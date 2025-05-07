@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
@@ -165,37 +164,37 @@ const TripManagement = () => {
     }
   };
   
-  // Table columns
+  // Table columns - fixed to match Column<Trip> type
   const columns = [
     { 
       header: 'Date', 
-      accessor: 'date' 
+      accessor: 'date' as keyof Trip
     },
     { 
       header: 'Client Name', 
-      accessor: 'clientName' 
+      accessor: 'clientName' as keyof Trip
     },
     { 
       header: 'Cargo Type', 
-      accessor: 'cargoType' 
+      accessor: 'cargoType' as keyof Trip
     },
     { 
       header: 'Route', 
-      accessor: 'route' 
+      accessor: 'route' as keyof Trip
     },
     { 
       header: 'Income', 
-      accessor: (trip: Trip) => `$${trip.tripIncome.toFixed(2)}`,
+      accessor: (trip: Trip) => `TSh ${trip.tripIncome.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Fuel Expenses', 
-      accessor: (trip: Trip) => `$${trip.fuelExpenses.toFixed(2)}`,
+      accessor: (trip: Trip) => `TSh ${trip.fuelExpenses.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Driver', 
-      accessor: 'driverName' 
+      accessor: 'driverName' as keyof Trip
     }
   ];
   
@@ -271,7 +270,7 @@ const TripManagement = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tripIncome">Trip Income ($)</Label>
+                  <Label htmlFor="tripIncome">Trip Income (TSh)</Label>
                   <Input
                     id="tripIncome"
                     type="number"
@@ -283,7 +282,7 @@ const TripManagement = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fuelExpenses">Fuel Expenses ($)</Label>
+                  <Label htmlFor="fuelExpenses">Fuel Expenses (TSh)</Label>
                   <Input
                     id="fuelExpenses"
                     type="number"

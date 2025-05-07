@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
@@ -157,25 +156,25 @@ const Inventory = () => {
     return `${margin.toFixed(1)}%`;
   };
   
-  // Table columns
+  // Table columns - fixed to match Column<InventoryItem> type
   const columns = [
     { 
       header: 'Item Name', 
-      accessor: 'itemName' 
+      accessor: 'itemName' as keyof InventoryItem
     },
     { 
       header: 'Quantity', 
-      accessor: 'quantity',
+      accessor: 'quantity' as keyof InventoryItem,
       className: 'text-center'
     },
     { 
       header: 'Purchase Price', 
-      accessor: (item: InventoryItem) => `$${item.purchasePrice.toFixed(2)}`,
+      accessor: (item: InventoryItem) => `TSh ${item.purchasePrice.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Sale Price', 
-      accessor: (item: InventoryItem) => `$${item.salePrice.toFixed(2)}`,
+      accessor: (item: InventoryItem) => `TSh ${item.salePrice.toFixed(2)}`,
       className: 'text-right'
     },
     { 
@@ -238,7 +237,7 @@ const Inventory = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="purchasePrice">Purchase Price ($)</Label>
+                  <Label htmlFor="purchasePrice">Purchase Price (TSh)</Label>
                   <Input
                     id="purchasePrice"
                     type="number"
@@ -250,7 +249,7 @@ const Inventory = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="salePrice">Sale Price ($)</Label>
+                  <Label htmlFor="salePrice">Sale Price (TSh)</Label>
                   <Input
                     id="salePrice"
                     type="number"

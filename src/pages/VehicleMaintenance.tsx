@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
@@ -154,23 +153,23 @@ const VehicleMaintenance = () => {
     }
   };
   
-  // Table columns
+  // Table columns - fixed to match Column<Maintenance> type
   const columns = [
     { 
       header: 'Vehicle Plate', 
-      accessor: 'vehiclePlateNumber' 
+      accessor: 'vehiclePlateNumber' as keyof Maintenance
     },
     { 
       header: 'Service Date', 
-      accessor: 'serviceDate' 
+      accessor: 'serviceDate' as keyof Maintenance 
     },
     { 
       header: 'Description', 
-      accessor: 'description' 
+      accessor: 'description' as keyof Maintenance
     },
     { 
       header: 'Cost', 
-      accessor: (record: Maintenance) => `$${record.cost.toFixed(2)}`,
+      accessor: (record: Maintenance) => `TSh ${record.cost.toFixed(2)}`,
       className: 'text-right'
     }
   ];
@@ -237,7 +236,7 @@ const VehicleMaintenance = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="cost">Cost ($)</Label>
+                <Label htmlFor="cost">Cost (TSh)</Label>
                 <Input
                   id="cost"
                   type="number"

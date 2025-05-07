@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import DataTable from '@/components/common/DataTable';
@@ -24,10 +23,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import databaseService, { CustomerTransaction } from '@/services/DatabaseService';
 import { format } from 'date-fns';
 
+interface CustomerBalance {
+  customerName: string;
+  balance: number;
+}
+
 const CustomerLedger = () => {
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<CustomerTransaction[]>([]);
-  const [customerBalances, setCustomerBalances] = useState<{ customerName: string, balance: number }[]>([]);
+  const [customerBalances, setCustomerBalances] = useState<CustomerBalance[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<CustomerTransaction | null>(null);
@@ -175,46 +179,46 @@ const CustomerLedger = () => {
     }
   };
   
-  // Table columns for transactions
+  // Table columns for transactions - fixed to match Column<CustomerTransaction> type
   const transactionColumns = [
     { 
       header: 'Date', 
-      accessor: 'date' 
+      accessor: 'date' as keyof CustomerTransaction 
     },
     { 
       header: 'Customer Name', 
-      accessor: 'customerName' 
+      accessor: 'customerName' as keyof CustomerTransaction
     },
     { 
       header: 'Amount Owed', 
       accessor: (transaction: CustomerTransaction) => 
-        `$${transaction.amountOwed.toFixed(2)}`,
+        `TSh ${transaction.amountOwed.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Amount Paid', 
       accessor: (transaction: CustomerTransaction) => 
-        `$${transaction.amountPaid.toFixed(2)}`,
+        `TSh ${transaction.amountPaid.toFixed(2)}`,
       className: 'text-right'
     },
     { 
       header: 'Balance', 
       accessor: (transaction: CustomerTransaction) => 
-        `$${(transaction.amountOwed - transaction.amountPaid).toFixed(2)}`,
+        `TSh ${(transaction.amountOwed - transaction.amountPaid).toFixed(2)}`,
       className: 'text-right font-medium'
     }
   ];
   
-  // Table columns for balances
+  // Table columns for balances - fixed to match Column<CustomerBalance> type
   const balanceColumns = [
     { 
       header: 'Customer Name', 
-      accessor: 'customerName' 
+      accessor: 'customerName' as keyof CustomerBalance
     },
     { 
       header: 'Balance', 
-      accessor: (record: { customerName: string, balance: number }) => 
-        `$${record.balance.toFixed(2)}`,
+      accessor: (record: CustomerBalance) => 
+        `TSh ${record.balance.toFixed(2)}`,
       className: 'text-right font-medium'
     }
   ];
@@ -233,7 +237,7 @@ const CustomerLedger = () => {
               <CardTitle className="text-sm font-medium">Total Owed</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalOwed.toFixed(2)}</div>
+              <div className="text-2xl font-bold">TSh {totalOwed.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Total amount customers owe
               </p>
@@ -244,7 +248,7 @@ const CustomerLedger = () => {
               <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalPaid.toFixed(2)}</div>
+              <div className="text-2xl font-bold">TSh {totalPaid.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Total amount received from customers
               </p>
@@ -255,7 +259,7 @@ const CustomerLedger = () => {
               <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalBalance.toFixed(2)}</div>
+              <div className="text-2xl font-bold">TSh {totalBalance.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Total unpaid balance
               </p>
@@ -328,7 +332,7 @@ const CustomerLedger = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amountOwed">Amount Owed ($)</Label>
+                  <Label htmlFor="amountOwed">Amount Owed (TSh)</Label>
                   <Input
                     id="amountOwed"
                     type="number"
@@ -340,7 +344,7 @@ const CustomerLedger = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amountPaid">Amount Paid ($)</Label>
+                  <Label htmlFor="amountPaid">Amount Paid (TSh)</Label>
                   <Input
                     id="amountPaid"
                     type="number"
